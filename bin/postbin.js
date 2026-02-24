@@ -108,6 +108,30 @@ switch (command) {
     }
     break;
 
+  case 'launch':
+  case 'manage':
+    const appName = process.argv[3];
+    if (!appName || appName.startsWith('--')) {
+      console.error('\n❌ Please provide an app name. \n👉 Example: postbin manage myapp\n');
+      process.exit(1);
+    }
+
+    const runPid = getPid();
+    if (!runPid || !isRunning(runPid)) {
+      console.log('⚠️  Warning: Postbin daemon does not seem to be running. You may need to run `postbin start` first.\n');
+    }
+
+    const manageUrl = `http://localhost:${port}/manage/${appName}`;
+    console.log(`Opening ${manageUrl} ...`);
+    
+    const startCmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'start' : 'xdg-open';
+    try {
+      execSync(`${startCmd} ${manageUrl}`);
+    } catch (e) {
+      console.error('Failed to open browser automatically. Please open the URL manually: ' + manageUrl);
+    }
+    break;
+
   default:
     console.log(`
 Usage: postbin <command> [options]
@@ -118,6 +142,8 @@ Commands:
   restart               Restart the daemon
   status                Show running status
   logs                  Tail the daemon logs
+  manage <app_name>     Open the management UI for a specific app in your browser
+  launch <app_name>     Alias for manage
     `);
     break;
 }

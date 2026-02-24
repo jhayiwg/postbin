@@ -6,7 +6,9 @@ It acts exactly like Webhook.site or RequestBin but runs completely locally, sto
 ## Features
 
 - **Dynamic Endpoints**: Simply send requests to `localhost:5555/{any-app-name}` and it's captured instantly.
-- **Beautiful UI Dashboard**: View all requests via an elegant dark-mode UI with live stream updates at `localhost:5555//manage/{any-app-name}`.
+- **Beautiful UI Dashboard**: View all requests via an elegant dark-mode UI with live stream updates at `localhost:5555/manage/{any-app-name}`.
+  <br>
+  <img src="./screenshot.png" alt="Postbin Dashboard UI" width="800">
 - **Background Daemon**: Runs entirely in the background using native node detached processes.
 - **Persistent Storage**: Utilizes `better-sqlite3` to store logs efficiently.
 - **Privacy First**: Completely local, your sensitive webhook data never leaves your machine.
@@ -45,6 +47,8 @@ postbin stop              # Stops the background server
 postbin restart           # Restarts the server
 postbin status            # Check if the server is actively running
 postbin logs              # Tails the server logs in real-time
+postbin manage <app>      # Automagically opens the dashboard interface for an app in your browser
+postbin launch <app>      # Alias for postbin manage
 ```
 
 ---

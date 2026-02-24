@@ -48,3 +48,9 @@ Usage examples:
 Usage examples:
    POST http://localhost:5556/myapp
    GET  http://localhost:5556/manage/myapp
+🚀 Postbin server running on port 5555
+📁 Data stored in sqlite3 database
+
+Usage examples:
+   POST http://localhost:5555/myapp
+   GET  http://localhost:5555/manage/myapp
