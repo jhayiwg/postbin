@@ -1,2 +1,5 @@
 node_modules/
 data/*
+.postbin.pid
+postbin.log
+dist/*
