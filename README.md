@@ -75,8 +75,27 @@ curl -X PUT http://localhost:5555/my-app -H "Authorization: Bearer test" -d "Raw
 To view the beautifully styled dashboard for a specific application/slug, just append the app slug to `/manage/` in your browser:
 
 👉 **http://localhost:5555/manage/stripe-webhooks**
+<br>
+<img src="./screenshot.png" alt="Postbin Dashboard UI" width="800">
 
 _(The UI uses Server-Sent Events to update instantly as soon as a new request hits your endpoints without refreshing)._
+
+---
+
+## 🌐 Exposing to the Internet (HTTPS / Real Webhooks)
+
+If you need to capture real webhooks from external services (like Stripe, GitHub, Slack, etc.), your local server needs a public HTTPS URL. You can easily achieve this using **[ngrok](https://ngrok.com/)**.
+
+1. Install ngrok and authenticate.
+2. Expose the port Postbin is running on (default is 5555):
+
+```bash
+ngrok http 5555
+```
+
+3. `ngrok` will provide a secure forwarding URL (e.g., `https://a1b2c3d4.ngrok-free.app`).
+4. Configure your external service webhook to point to this new URL plus your app slug, like: `https://a1b2c3d4.ngrok-free.app/my-public-webhook`.
+5. You can view the requests locally at `http://localhost:5555/manage/my-public-webhook`.
 
 ---
 

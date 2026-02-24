@@ -3,3 +3,4 @@ data/*
 .postbin.pid
 postbin.log
 dist/*
+private/*
