@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Postbin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              gray: {
+                850: "#1f2937",
+                900: "#111827",
+                950: "#030712",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #4b5563;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #6b7280;
+      }
+
+      .method-badge {
+        min-width: 60px;
+        text-align: center;
+      }
+      .method-valid {
+        background-color: #3b82f6; /* default blue */
+      }
+      .method-GET {
+        background-color: #10b981;
+        color: white;
+      }
+      .method-POST {
+        background-color: #3b82f6;
+        color: white;
+      }
+      .method-PUT {
+        background-color: #f59e0b;
+        color: white;
+      }
+      .method-DELETE {
+        background-color: #ef4444;
+        color: white;
+      }
+      .method-PATCH {
+        background-color: #8b5cf6;
+        color: white;
+      }
+      .method-OPTIONS {
+        background-color: #64748b;
+        color: white;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-gray-950 text-gray-300 h-screen w-screen overflow-hidden flex flex-col font-sans antialiased selection:bg-blue-500/30"
+  >
+    <!-- Top Navigation -->
+    <header
+      class="h-14 border-b border-gray-800 bg-gray-900/50 backdrop-blur-md flex items-center justify-between px-6 shrink-0 z-10"
+    >
+      <div class="flex items-center gap-3">
+        <svg
+          class="w-6 h-6 text-blue-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+          ></path>
+        </svg>
+        <h1 class="text-xl font-bold text-white tracking-tight">
+          Postbin
+          <span class="text-gray-500 font-normal ml-1 text-sm tracking-normal"
+            >beta</span
+          >
+        </h1>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <div
+          class="flex items-center gap-2 bg-gray-800/50 rounded-lg px-3 py-1.5 border border-gray-700/50"
+        >
+          <div class="relative flex h-2.5 w-2.5">
+            <span
+              id="connection-ping"
+              class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"
+            ></span>
+            <span
+              id="connection-dot"
+              class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"
+            ></span>
+          </div>
+          <span id="connection-status" class="text-xs font-medium text-gray-400"
+            >Listening to /<span
+              id="header-app-slug"
+              class="text-white font-mono"
+            ></span
+          ></span>
+        </div>
+        <button
+          onclick="clearAllRequests()"
+          class="text-sm font-medium hover:text-red-400 transition-colors flex items-center gap-1"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+            ></path>
+          </svg>
+          Clear All
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Layout -->
+    <div class="flex flex-1 overflow-hidden h-full">
+      <!-- Sidebar: Request List -->
+      <aside
+        class="w-80 border-r border-gray-800 bg-gray-900/40 flex flex-col shrink-0"
+      >
+        <div
+          class="p-4 border-b border-gray-800 flex justify-between items-center shrink-0"
+        >
+          <h2
+            class="text-sm font-semibold text-gray-400 uppercase tracking-wider"
+          >
+            Requests
+          </h2>
+          <span
+            id="request-count"
+            class="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full font-medium"
+            >0</span
+          >
+        </div>
+        <div class="flex-1 overflow-hidden relative w-full">
+          <div
+            id="empty-state"
+            class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center space-y-3 opacity-50 pointer-events-none"
+          >
+            <svg
+              class="w-10 h-10 text-gray-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-2m-4-1v8m0 0l3-3m-3 3L9 8m-5 5h2.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293h3.172a1 1 0 00.707-.293l2.414-2.414a1 1 0 01.707-.293H20"
+              ></path>
+            </svg>
+            <p class="text-sm">Waiting for requests...</p>
+          </div>
+          <div id="request-list" class="absolute inset-0 overflow-y-auto w-full z-10 text-left">
+            <!-- Requests injected here -->
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Area: Request Details -->
+      <main class="flex-1 flex flex-col bg-gray-950 overflow-hidden relative">
+        <div
+          id="no-selection"
+          class="absolute inset-0 flex items-center justify-center flex-col text-gray-500 z-10 transition-opacity duration-200"
+        >
+          <svg
+            class="w-16 h-16 mb-4 opacity-20"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1"
+              d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"
+            ></path>
+          </svg>
+          <p>Select a request to view details</p>
+        </div>
+
+        <div id="detail-view" class="hidden flex-col h-full w-full">
+          <!-- Detail Header (Summary) -->
+          <div
+            class="px-6 py-5 border-b border-gray-800 bg-gray-900/60 shrink-0"
+          >
+            <div class="flex items-start justify-between">
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-3">
+                  <span
+                    id="detail-method"
+                    class="method-badge text-xs font-bold px-2 py-1 rounded-md"
+                    >GET</span
+                  >
+                  <h2
+                    id="detail-url"
+                    class="text-lg font-medium text-white font-mono break-all line-clamp-2"
+                  >
+                    /
+                  </h2>
+                </div>
+                <div class="flex items-center gap-4 text-xs text-gray-400">
+                  <div class="flex items-center gap-1.5" title="Time">
+                    <svg
+                      class="w-3.5 h-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      ></path></svg
+                    ><span id="detail-time">--</span>
+                  </div>
+                  <div class="flex items-center gap-1.5" title="IP Address">
+                    <svg
+                      class="w-3.5 h-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"
+                      ></path></svg
+                    ><span id="detail-ip">--</span>
+                  </div>
+                  <div class="flex items-center gap-1.5" title="ID">
+                    <svg
+                      class="w-3.5 h-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"
+                      ></path></svg
+                    ><span id="detail-id" class="font-mono">--</span>
+                  </div>
+                </div>
+              </div>
+              <button
+                onclick="deleteCurrentRequest()"
+                class="p-2 text-gray-500 hover:text-red-400 hover:bg-gray-800 rounded-md transition-colors"
+                title="Delete Request"
+              >
+                <svg
+                  class="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Detail Tabs Navigation -->
+          <div
+            class="flex border-b border-gray-800 px-4 shrink-0 bg-gray-900/30"
+          >
+            <button
+              onclick="switchTab('body')"
+              id="tab-btn-body"
+              class="px-5 py-3 text-sm font-medium border-b-2 border-blue-500 text-blue-400"
+            >
+              Body
+            </button>
+            <button
+              onclick="switchTab('headers')"
+              id="tab-btn-headers"
+              class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200"
+            >
+              Headers
+              <span
+                id="count-headers"
+                class="text-xs bg-gray-800 px-1.5 py-0.5 rounded ml-1"
+                >0</span
+              >
+            </button>
+            <button
+              onclick="switchTab('query')"
+              id="tab-btn-query"
+              class="px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200"
+            >
+              Query
+              <span
+                id="count-query"
+                class="text-xs bg-gray-800 px-1.5 py-0.5 rounded ml-1"
+                >0</span
+              >
+            </button>
+          </div>
+
+          <!-- Tab Contents Area -->
+          <div class="flex-1 overflow-auto p-6 bg-[#0d1117]">
+            <!-- Body Tab -->
+            <div id="tab-body" class="h-full">
+              <div
+                id="body-empty"
+                class="hidden h-full flex items-center justify-center text-gray-600 text-sm"
+              >
+                No body content
+              </div>
+              <div class="relative group h-full">
+                <button
+                  onclick="copyToClipboard('detail-body-content')"
+                  class="absolute top-2 right-2 p-1.5 bg-gray-800 border border-gray-700 rounded text-gray-400 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                  title="Copy"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    ></path>
+                  </svg>
+                </button>
+                <pre
+                  class="m-0 h-full overflow-auto text-sm border border-gray-800 rounded-lg p-4 bg-gray-900/50"
+                ><code id="detail-body-content" class="language-json break-all whitespace-pre-wrap"></code></pre>
+              </div>
+            </div>
+
+            <!-- Headers Tab -->
+            <div id="tab-headers" class="hidden">
+              <div class="border border-gray-800 rounded-lg overflow-hidden">
+                <table class="w-full text-left text-sm">
+                  <thead class="bg-gray-800/80 text-gray-400 font-medium">
+                    <tr>
+                      <th class="px-4 py-2 border-b border-gray-700 w-1/3">
+                        Name
+                      </th>
+                      <th class="px-4 py-2 border-b border-gray-700">Value</th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    id="detail-headers-body"
+                    class="divide-y divide-gray-800 bg-gray-900/40 text-gray-300 font-mono"
+                  ></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Query Tab -->
+            <div id="tab-query" class="hidden h-full">
+              <div
+                id="query-empty"
+                class="hidden h-full flex flex-col items-center justify-center text-gray-600 text-sm"
+              >
+                No query parameters
+              </div>
+              <div
+                id="query-content"
+                class="border border-gray-800 rounded-lg overflow-hidden"
+              >
+                <table class="w-full text-left text-sm">
+                  <thead class="bg-gray-800/80 text-gray-400 font-medium">
+                    <tr>
+                      <th class="px-4 py-2 border-b border-gray-700 w-1/3">
+                        Key
+                      </th>
+                      <th class="px-4 py-2 border-b border-gray-700">Value</th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    id="detail-query-body"
+                    class="divide-y divide-gray-800 bg-gray-900/40 text-gray-300 font-mono"
+                  ></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+      // Extract appslug from URL /manage/:appSlug
+      const pathSegments = window.location.pathname.split("/").filter(Boolean);
+      const APP_SLUG = pathSegments[1] || "test";
+      document.getElementById("header-app-slug").innerText = APP_SLUG;
+
+      let requests = [];
+      let selectedRequestId = null;
+
+      // Fetch initial list
+      async function fetchRequests() {
+        try {
+          const res = await fetch(`/api/${APP_SLUG}/requests`);
+          const data = await res.json();
+          requests = data;
+          renderList();
+          if (requests.length > 0 && !selectedRequestId) {
+            selectRequest(requests[0].id);
+          }
+        } catch (err) {
+          console.error("Failed to fetch requests", err);
+        }
+      }
+
+      // Setup SSE connection
+      function setupSSE() {
+        const eventSource = new EventSource(`/api/${APP_SLUG}/stream`);
+        const dot = document.getElementById("connection-dot");
+        const ping = document.getElementById("connection-ping");
+        const status = document.getElementById("connection-status");
+
+        eventSource.onopen = () => {
+          dot.className =
+            "relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500";
+          ping.classList.remove("hidden");
+          status.innerText = `Listening to /${APP_SLUG}`;
+        };
+
+        eventSource.addEventListener("new_request", (e) => {
+          const newReq = JSON.parse(e.data);
+          requests.unshift(newReq);
+          renderList();
+          if (!selectedRequestId) selectRequest(newReq.id);
+        });
+
+        eventSource.addEventListener("delete", (e) => {
+          const { id } = JSON.parse(e.data);
+          requests = requests.filter((r) => r.id !== id);
+          if (selectedRequestId === id) {
+            selectedRequestId = null;
+            document.getElementById("no-selection").classList.remove("hidden");
+            document.getElementById("detail-view").classList.add("hidden");
+          }
+          renderList();
+        });
+
+        eventSource.addEventListener("clear", () => {
+          requests = [];
+          selectedRequestId = null;
+          document.getElementById("no-selection").classList.remove("hidden");
+          document.getElementById("detail-view").classList.add("hidden");
+          renderList();
+        });
+
+        eventSource.onerror = () => {
+          dot.className =
+            "relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500";
+          ping.classList.add("hidden");
+          status.innerText = `Reconnecting...`;
+        };
+      }
+
+      // Render Sidebar List
+      function renderList() {
+        const listEl = document.getElementById("request-list");
+        const emptyEl = document.getElementById("empty-state");
+        document.getElementById("request-count").innerText = requests.length;
+
+        if (requests.length === 0) {
+          emptyEl.classList.remove("hidden");
+          listEl.innerHTML = "";
+          return;
+        }
+
+        emptyEl.classList.add("hidden");
+        let html = "";
+
+        requests.forEach((req) => {
+          const isSelected = req.id === selectedRequestId;
+          const timeStr = new Date(req.created_at).toLocaleTimeString();
+          const dDateStr = new Date(req.created_at).toLocaleDateString(
+            undefined,
+            { month: "short", day: "numeric" },
+          );
+
+          // Truncate URL query for display
+          const displayUrl = req.url.split("?")[0];
+
+          html += `
+                    <div onclick="selectRequest('${req.id}')" 
+                         class="group cursor-pointer border-b border-gray-800 p-3 hover:bg-gray-800/50 transition-colors ${isSelected ? "bg-gray-800 border-l-2 border-l-blue-500 pl-[10px]" : "border-l-2 border-l-transparent"}">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="method-badge method-${req.method} text-[10px] font-bold px-1.5 py-0.5 rounded-sm">${req.method}</span>
+                            <span class="text-[11px] text-gray-500 font-medium">${dDateStr} ${timeStr}</span>
+                        </div>
+                        <div class="text-sm text-gray-300 font-medium truncate font-mono">${displayUrl}</div>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="text-[11px] text-gray-500 font-mono bg-gray-900 px-1.5 py-0.5 rounded">${req.ip || "Unknown IP"}</span>
+                        </div>
+                    </div>
+                `;
+        });
+
+        listEl.innerHTML = html;
+      }
+
+      // View Detail
+      function selectRequest(id) {
+        selectedRequestId = id;
+        renderList(); // Update selected state in sidebar
+
+        const req = requests.find((r) => r.id === id);
+        if (!req) return;
+
+        document.getElementById("no-selection").classList.add("hidden");
+        document.getElementById("detail-view").classList.remove("hidden");
+        document.getElementById("detail-view").classList.add("flex");
+
+        // Header summary
+        const methodEl = document.getElementById("detail-method");
+        methodEl.innerText = req.method;
+        methodEl.className = `method-badge method-${req.method} text-xs font-bold px-2 py-1 rounded-md`;
+
+        document.getElementById("detail-url").innerText = req.url;
+        document.getElementById("detail-time").innerText = new Date(
+          req.created_at,
+        ).toLocaleString();
+        document.getElementById("detail-ip").innerText = req.ip || "Unknown";
+        document.getElementById("detail-id").innerText = req.id.split("-")[0];
+
+        // Parse JSON structures
+        const headers = JSON.parse(req.headers || "{}");
+        const query = JSON.parse(req.query_params || "{}");
+
+        // Set counts
+        document.getElementById("count-headers").innerText =
+          Object.keys(headers).length;
+        document.getElementById("count-query").innerText =
+          Object.keys(query).length;
+
+        // Render Navs/Content
+        renderHeaders(headers);
+        renderQuery(query);
+        renderBody(req.body, headers["content-type"] || "");
+
+        // Re-highlight code block
+        hljs.highlightAll();
+      }
+
+      function renderHeaders(headers) {
+        const tbody = document.getElementById("detail-headers-body");
+        let html = "";
+        for (const [key, value] of Object.entries(headers)) {
+          html += `
+                    <tr>
+                        <td class="px-4 py-2 border-b border-gray-800 text-blue-400 break-all">${key}</td>
+                        <td class="px-4 py-2 border-b border-gray-800 text-green-300 break-all">${value}</td>
+                    </tr>
+                `;
+        }
+        tbody.innerHTML =
+          html ||
+          '<tr><td colspan="2" class="px-4 py-4 text-center text-gray-600">No headers</td></tr>';
+      }
+
+      function renderQuery(query) {
+        const tbody = document.getElementById("detail-query-body");
+        const emptyEl = document.getElementById("query-empty");
+        const tableEl = document.getElementById("query-content");
+
+        if (Object.keys(query).length === 0) {
+          emptyEl.classList.remove("hidden");
+          tableEl.classList.add("hidden");
+          return;
+        }
+
+        emptyEl.classList.add("hidden");
+        tableEl.classList.remove("hidden");
+
+        let html = "";
+        for (const [key, value] of Object.entries(query)) {
+          html += `
+                    <tr>
+                        <td class="px-4 py-2 border-b border-gray-800 text-purple-400 break-all">${key}</td>
+                        <td class="px-4 py-2 border-b border-gray-800 break-all">${value}</td>
+                    </tr>
+                `;
+        }
+        tbody.innerHTML = html;
+      }
+
+      function renderBody(body, contentType) {
+        const codeEl = document.getElementById("detail-body-content");
+        const emptyEl = document.getElementById("body-empty");
+
+        if (!body) {
+          emptyEl.classList.remove("hidden");
+          codeEl.parentElement.classList.add("hidden");
+          return;
+        }
+
+        emptyEl.classList.add("hidden");
+        codeEl.parentElement.classList.remove("hidden");
+
+        // Attempt JSON formatting
+        if (contentType.includes("json")) {
+          try {
+            const parsed = JSON.parse(body);
+            codeEl.textContent = JSON.stringify(parsed, null, 2);
+            codeEl.className = "language-json break-all whitespace-pre-wrap";
+          } catch (e) {
+            codeEl.textContent = body;
+            codeEl.className =
+              "language-plaintext break-all whitespace-pre-wrap";
+          }
+        } else {
+          codeEl.textContent = body;
+          codeEl.className = "language-plaintext break-all whitespace-pre-wrap";
+        }
+      }
+
+      function switchTab(tabName) {
+        // Reset styles
+        ["body", "headers", "query"].forEach((t) => {
+          document.getElementById(`tab-${t}`).classList.add("hidden");
+          const btn = document.getElementById(`tab-btn-${t}`);
+          btn.classList.remove("border-blue-500", "text-blue-400");
+          btn.classList.add("border-transparent", "text-gray-400");
+        });
+
+        // Active Tab
+        document.getElementById(`tab-${tabName}`).classList.remove("hidden");
+        const actBtn = document.getElementById(`tab-btn-${tabName}`);
+        actBtn.classList.remove("border-transparent", "text-gray-400");
+        actBtn.classList.add("border-blue-500", "text-blue-400");
+      }
+
+      async function deleteCurrentRequest() {
+        if (!selectedRequestId) return;
+        try {
+          await fetch(`/api/${APP_SLUG}/requests/${selectedRequestId}`, {
+            method: "DELETE",
+          });
+          // We let SSE handle UI removal
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      async function clearAllRequests() {
+        if (
+          !confirm(
+            `Are you sure you want to clear all requests for /${APP_SLUG}?`,
+          )
+        )
+          return;
+        try {
+          await fetch(`/api/${APP_SLUG}/requests`, { method: "DELETE" });
+          // SSE handles UI removal
+        } catch (err) {
+          console.error(err);
+        }
+      }
+
+      function copyToClipboard(elementId) {
+        const text = document.getElementById(elementId).innerText;
+        navigator.clipboard.writeText(text).then(() => {
+          // simple tactile visual feedback could go here
+        });
+      }
+
+      // Initialize
+      fetchRequests().then(() => {
+        setupSSE();
+        // Optional: highlight any code
+        hljs.highlightAll();
+      });
+    </script>
+  </body>
+</html>
